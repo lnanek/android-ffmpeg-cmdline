@@ -7,8 +7,11 @@ import za.jamie.androidffmpegcmdline.ffmpeg.FfmpegJob;
 import za.jamie.androidffmpegcmdline.ffmpeg.Utils;
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -48,10 +51,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	private Button mStartButton;
 	
 	private String mFfmpegInstallPath;
+	private SharedPreferences mSharedPreferences;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+		
 		setContentView(R.layout.activity_main);
 		
 		findViews();
@@ -61,28 +68,55 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		installFfmpeg();
 		
 		mStartButton.setOnClickListener(this);
+		
+		mEnableAudio.setChecked(false);
 	}
 	
 	private void findViews() {
 		mInputFilepath = (EditText) findViewById(R.id.editText1);
+		mInputFilepath.setText(mSharedPreferences.getString("mInputFilepath", ""));
+		
 		mOutputFilename = (EditText) findViewById(R.id.editText2);
-		
-		mEnableVideo = (CheckBox) findViewById(R.id.checkBox1);	
+		mOutputFilename.setText(mSharedPreferences.getString("mOutputFilename", ""));
+				
 		mVideoCodec = (EditText) findViewById(R.id.editText3);
-		mWidth = (EditText) findViewById(R.id.editText5);
-		mHeight = (EditText) findViewById(R.id.editText6);
-		mVideoBitrate = (EditText) findViewById(R.id.editText8);
-		mFrameRate = (EditText) findViewById(R.id.editText10);
-		mVideoFilter = (EditText) findViewById(R.id.editText12);
-		mVideoBitStreamFilter = (EditText) findViewById(R.id.editText14);
+		mVideoCodec.setText(mSharedPreferences.getString("mVideoCodec", ""));
 		
-		mEnableAudio = (CheckBox) findViewById(R.id.checkBox2);
+		mWidth = (EditText) findViewById(R.id.editText5);
+		mWidth.setText(mSharedPreferences.getString("mWidth", ""));
+		
+		mHeight = (EditText) findViewById(R.id.editText6);
+		mHeight.setText(mSharedPreferences.getString("mHeight", ""));
+		
+		mVideoBitrate = (EditText) findViewById(R.id.editText8);
+		mVideoBitrate.setText(mSharedPreferences.getString("mVideoBitrate", ""));
+		mFrameRate = (EditText) findViewById(R.id.editText10);
+		mFrameRate.setText(mSharedPreferences.getString("mFrameRate", ""));
+		mVideoFilter = (EditText) findViewById(R.id.editText12);
+		mVideoFilter.setText(mSharedPreferences.getString("mVideoFilter", ""));
+		mVideoBitStreamFilter = (EditText) findViewById(R.id.editText14);
+		mVideoBitStreamFilter.setText(mSharedPreferences.getString("mVideoBitStreamFilter", ""));
+		
 		mAudioCodec = (EditText) findViewById(R.id.editText4);	
+		mAudioCodec.setText(mSharedPreferences.getString("mAudioCodec", ""));
+		
 		mChannels = (EditText) findViewById(R.id.editText7);	
+		mChannels.setText(mSharedPreferences.getString("mChannels", ""));
+
 		mAudioBitrate = (EditText) findViewById(R.id.editText9);	
+		mAudioBitrate.setText(mSharedPreferences.getString("mAudioBitrate", ""));
+		
 		mSampleRate = (EditText) findViewById(R.id.editText11);
+		mSampleRate.setText(mSharedPreferences.getString("mSampleRate", ""));
+		
 		mAudioFilter = (EditText) findViewById(R.id.editText13);
+		mAudioFilter.setText(mSharedPreferences.getString("mAudioFilter", ""));
+		
 		mAudioBitStreamFilter = (EditText) findViewById(R.id.editText15);
+		mAudioBitStreamFilter.setText(mSharedPreferences.getString("mAudioBitStreamFilter", ""));
+
+		mEnableAudio = (CheckBox) findViewById(R.id.checkBox2);
+		mEnableVideo = (CheckBox) findViewById(R.id.checkBox1);	
 		
 		mVideoFields = (ViewGroup) findViewById(R.id.videoFields);
 		mAudioFields = (ViewGroup) findViewById(R.id.audioFields);
@@ -165,34 +199,87 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	}
 	
 	private void loadJob(FfmpegJob job) {
-		job.inputPath = mInputFilepath.getText().toString();
+		
+		final Editor edit = mSharedPreferences.edit();
+		
+		job.inputPath = mInputFilepath.getText().toString();		
+		edit.putString("mInputFilepath", mInputFilepath.getText().toString());
+		
 		job.outputPath = mOutputFilename.getText().toString();
+		edit.putString("mOutputFilename", mOutputFilename.getText().toString());
 		
 		job.disableVideo = !mEnableVideo.isChecked();	
+		
 		job.videoCodec = mVideoCodec.getText().toString();
+		edit.putString("mVideoCodec", mVideoCodec.getText().toString());
+		
 		if (!mWidth.getText().toString().isEmpty() && 
 				!mHeight.getText().toString().isEmpty()) {
 			
 			job.videoWidth = Integer.parseInt(mWidth.getText().toString());
+			edit.putString("mWidth", mWidth.getText().toString());
+			
 			job.videoHeight = Integer.parseInt(mHeight.getText().toString());
-		}			
-		if (!mVideoFilter.getText().toString().isEmpty())
+			edit.putString("mHeight", mHeight.getText().toString());
+			
+		} else {
+			edit.remove("mWidth");		
+			edit.remove("mHeight");			
+		}
+		
+		if (!mVideoFilter.getText().toString().isEmpty()) {
 			job.videoBitrate = Integer.parseInt(mVideoBitrate.getText().toString());
-		if (!mFrameRate.getText().toString().isEmpty())
+			edit.putString("mVideoBitrate", mVideoBitrate.getText().toString());
+		} else {
+			edit.remove("mVideoBitrate");			
+		}
+		
+		if (!mFrameRate.getText().toString().isEmpty()) {
 			job.videoFramerate = Float.parseFloat(mFrameRate.getText().toString());
+			edit.putString("mFrameRate", mFrameRate.getText().toString());
+		} else {
+			edit.remove("mFrameRate");			
+		}
+		
 		job.videoFilter = mVideoFilter.getText().toString();
+		edit.putString("mVideoFilter", mVideoFilter.getText().toString());
+
 		job.videoBitStreamFilter = mVideoBitStreamFilter.getText().toString();
+		edit.putString("mVideoBitStreamFilter", mVideoBitStreamFilter.getText().toString());
 		
 		job.disableAudio = !mEnableAudio.isChecked();
+		
 		job.audioCodec = mAudioCodec.getText().toString();	
-		if (!mChannels.getText().toString().isEmpty())
+		edit.putString("mAudioCodec", mAudioCodec.getText().toString());
+		
+		if (!mChannels.getText().toString().isEmpty()) {
 			job.audioChannels = Integer.parseInt(mChannels.getText().toString());
-		if (!mAudioBitrate.getText().toString().isEmpty())
+			edit.putString("mChannels", mChannels.getText().toString());
+		} else {
+			edit.remove("mChannels");			
+		}
+		
+		if (!mAudioBitrate.getText().toString().isEmpty()) {
 			job.audioBitrate = Integer.parseInt(mAudioBitrate.getText().toString());
-		if (!mSampleRate.getText().toString().isEmpty())
+			edit.putString("mAudioBitrate", mAudioBitrate.getText().toString());
+		} else {
+			edit.remove("mAudioBitrate");			
+		}
+		
+		if (!mSampleRate.getText().toString().isEmpty()) {
 			job.audioSampleRate = Integer.parseInt(mSampleRate.getText().toString());
+			edit.putString("mSampleRate", mSampleRate.getText().toString());
+		} else {
+			edit.remove("mSampleRate");
+		}
+		
 		job.audioFilter = mAudioFilter.getText().toString();
+		edit.putString("mAudioFilter", mAudioFilter.getText().toString());
+		
 		job.audioBitStreamFilter = mAudioBitStreamFilter.getText().toString();
+		edit.putString("mAudioBitStreamFilter", mAudioBitStreamFilter.getText().toString());
+		
+		edit.commit();
 	}
 
 }

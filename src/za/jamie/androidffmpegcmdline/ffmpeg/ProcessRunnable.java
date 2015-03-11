@@ -15,6 +15,32 @@ public class ProcessRunnable implements Runnable {
 	
 	public ProcessRunnable(ProcessBuilder process) {
 		mProcess = process;
+		
+		mListener = new ProcessListener() {
+			
+			private InputStream stdout;
+			private InputStream stderr;
+			
+			@Override
+			public void stdOut(InputStream stream) {
+				Log.i(TAG, "stdOut()");
+				stdout = stream;
+			}
+			
+			@Override
+			public void stdErr(InputStream stream) {
+				Log.i(TAG, "stdErr()");
+				stderr = stream;
+			}
+			
+			@Override
+			public void onExit(int exitCode) {
+				Log.i(TAG, "stdout = " + convertStreamToString(stdout));
+				Log.i(TAG, "stderr = " + convertStreamToString(stderr));
+				Log.i(TAG, "exitCode = " + exitCode);
+				
+			}
+		};
 	}
 	
 	@Override
@@ -55,5 +81,10 @@ public class ProcessRunnable implements Runnable {
 		public void stdErr(InputStream stream);
 		public void onExit(int exitCode);
 	}
-
+	
+	static String convertStreamToString(java.io.InputStream is) {
+	    java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+	    return s.hasNext() ? s.next() : "";
+	}
+	
 }

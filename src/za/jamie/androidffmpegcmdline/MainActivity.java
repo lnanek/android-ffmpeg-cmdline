@@ -10,6 +10,7 @@ import android.app.ProgressDialog;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -25,6 +26,8 @@ import android.widget.Toast;
 public class MainActivity extends Activity implements View.OnClickListener {
 
 	private static final String TAG = "MainActivity";
+	
+	private static final boolean REPLACE_EXISTING_FFMPEG = true;
 	
 	private EditText mInputFilepath;
 	private EditText mOutputFilename;
@@ -154,16 +157,48 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		mFfmpegInstallPath = ffmpegFile.toString();
 		Log.d(TAG, "ffmpeg install path: " + mFfmpegInstallPath);
 		
+		if (ffmpegFile.exists() && REPLACE_EXISTING_FFMPEG) {
+			Log.i(TAG, "Removing previous ffmpeg install");
+			ffmpegFile.delete();
+		}
+		
 		if (!ffmpegFile.exists()) {
 			try {
 				ffmpegFile.createNewFile();
 			} catch (IOException e) {
 				Log.e(TAG, "Failed to create new file!", e);
 			}
-			Utils.installBinaryFromRaw(this, R.raw.ffmpeg, ffmpegFile);
+			Utils.installBinaryFromRaw(this, 
+					getFfmpegBinaryRawResourceId(), ffmpegFile);
 		}
 		
 		ffmpegFile.setExecutable(true);
+	}
+	
+	private int getFfmpegBinaryRawResourceId() {
+		// Check preferred arch (e.g. armeabi-v7a)
+		if ( Build.CPU_ABI.toUpperCase().startsWith("ARM") ) {
+			Log.i(TAG, "using ARM ffmpeg");
+			return R.raw.ffmpeg_arm;
+		}		
+		if ( Build.CPU_ABI.toUpperCase().startsWith("X86") || 
+				Build.CPU_ABI.toUpperCase().startsWith("I686") ) {
+			Log.i(TAG, "using x86 ffmpeg");
+			return R.raw.ffmpeg_x86;
+		}
+
+		// Check supported arch (e.g. armeabi)
+		if ( Build.CPU_ABI2.toUpperCase().startsWith("ARM") ) {
+			Log.i(TAG, "using ARM ffmpeg");
+			return R.raw.ffmpeg_arm;
+		}		
+		if ( Build.CPU_ABI2.toUpperCase().startsWith("X86") || 
+				Build.CPU_ABI2.toUpperCase().startsWith("I686") ) {
+			Log.i(TAG, "using x86 ffmpeg");
+			return R.raw.ffmpeg_x86;
+		}
+		
+		throw new RuntimeException("arch not supported: " + Build.CPU_ABI + "/" + Build.CPU_ABI2);
 	}
 
 	@Override
